@@ -15,3 +15,13 @@
 | Third Report (All Reports Collated)                 | December 10  |
 | Second Demo                                         | December 13  |
 | Electronic Project Archive                          | December 16  |
+
+
+## Cloud Server Installation
+- Create a Python virtual environment
+    * [Virutal Environment Guide](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
+- Install required modules
+    * `pip install -r requirements.txt`
+- Set environment variables in "admin_app_config.py"
+- Run development server
+    * `python app.py 8080`
