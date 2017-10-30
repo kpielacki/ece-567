@@ -6,4 +6,4 @@ class HomeView(BaseView):
 
     @expose('/')
     def index(self):
-        return render_template('display.html', content='TESTING HOMEPAGE')
+        return render_template('home.html')
