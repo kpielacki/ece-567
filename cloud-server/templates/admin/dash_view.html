@@ -1,0 +1,12 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+    {{ css|safe }}
+    <div id="react-entry-point">
+        <div class="_dash-loading">
+            Loading...
+        </div>
+    </div>
+    {{ dashconfig|safe }}
+    {{ scripts|safe }}
+{% endblock %}

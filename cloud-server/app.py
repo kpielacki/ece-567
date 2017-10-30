@@ -15,5 +15,5 @@ if __name__ == '__main__':
     login_manager.init_app(server)
 
     app = user_dash(server)
-    add_admin_views(admin)
+    add_admin_views(admin, app)
     app.run_server(host='0.0.0.0', port=args.port, debug=args.debug)
