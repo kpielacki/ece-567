@@ -4,20 +4,20 @@ from secure_views import SecureModelView
 
 class UserView(SecureModelView):
 
-    can_create = False
-    can_edit = False
+    can_create = True
+    can_edit = True
     can_delete = False
 
     column_list = (
-        'username',
+        'id',
         'email',
+        'password',
         'user_group',
         'active',
-        'last_login',
+        'birthday',
         'gender',
-        'birth_date',
+        'last_login',
     )
 
-    column_searchable_list = ['username', 'email']
-
+    column_searchable_list = ['id', 'email']
     column_filters = column_list
