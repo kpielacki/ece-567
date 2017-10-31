@@ -14,7 +14,6 @@ class LoginView(BaseView):
         # TODO: Add redirect and post login method
         next = request.args.get("next")
         if current_user.is_authenticated:
-            return redirect('/')
+            return redirect('/home')
         
         return self.render('display.html', content='TEST LOGIN')
-

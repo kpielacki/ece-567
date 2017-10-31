@@ -1,9 +1,15 @@
-from flask import Flask
+from flask import (Flask, redirect, url_for)
 from flask_sqlalchemy import SQLAlchemy
-from flask_admin import Admin
+from flask_admin import (Admin, BaseView, expose)
 import os
 import sys
-from views.home_view import HomeView
+
+
+class DummyHome(BaseView):
+
+    @expose('/')
+    def index(self):
+        return redirect('/home')
 
 
 # Import environment variables
@@ -29,7 +35,7 @@ server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 admin = Admin(
     name=name,
     static_url_path='/assets',
-    index_view=HomeView(name='Home', url='/'),
+    index_view=DummyHome(name='', url='/'),
     base_template='base.html',
     template_mode='bootstrap3'
 )

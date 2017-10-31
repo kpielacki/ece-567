@@ -1,9 +1,11 @@
-from flask import render_template
 from flask_admin import (BaseView, expose)
 
 
 class HomeView(BaseView):
 
-    @expose('/')
+    def is_visible(self):
+        return False
+
+    @expose('/', methods=('GET',))
     def index(self):
-        return render_template('home.html')
+        return self.render('home.html')

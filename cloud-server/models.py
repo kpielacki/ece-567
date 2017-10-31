@@ -18,6 +18,35 @@ class User(db.Model):
         return 'Username: %s' % self.username
 
 
+class UserLocation(db.Model):
+
+    __tablename__ = 'user_location'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+
+    def __repr__(self):
+        return 'User ID: {}\nDate: {}'.format(
+            self.user_id, self.date)
+
+
+class UserSteps(db.Model):
+
+    __tablename__ = 'user_steps'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    step_count = db.Column(db.Integer)
+
+    def __repr__(self):
+        return 'User ID: {}\nDate: {}'.format(
+            self.user_id, self.date)
+
+
 class HazardLocation(db.Model):
 
     __tablename__ = 'hazard_location'

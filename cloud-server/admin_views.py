@@ -1,5 +1,6 @@
 from admin_app_config import db
 from models import (User, HazardLocation)
+from views.home_view import HomeView
 from views.login_view import LoginView
 from views.user_view import UserView
 from views.mobile_view import MobileView
@@ -8,6 +9,7 @@ from views.hazard_location_view import HazardLocationView
 
 
 def add_admin_views(admin, app):
+    admin.add_view(HomeView(name='Home', endpoint='home'))
     # Login view
     admin.add_view(LoginView(name='Login', endpoint='login'))
     # Mobile view handling
