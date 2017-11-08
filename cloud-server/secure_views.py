@@ -8,8 +8,6 @@ from flask_security import (Security, SQLAlchemyUserDatastore, UserMixin,
 class SecureModelView(sqla.ModelView):
 
     def is_accessible(self):
-        # TODO: Restort upon user auth system.
-        return True
         if not current_user.is_active or not current_user.is_authenticated:
             return False
 

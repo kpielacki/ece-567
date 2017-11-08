@@ -41,7 +41,7 @@ class SignupForm(Form):
 class LoginView(BaseView):
 
     def is_visible(self):
-        return False
+        return True
 
     @expose('/', methods=('GET', 'POST'))
     def index(self):

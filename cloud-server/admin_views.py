@@ -9,9 +9,8 @@ from views.hazard_location_view import HazardLocationView
 
 
 def add_admin_views(admin, app):
+    # Home View
     admin.add_view(HomeView(name='Home', endpoint='home'))
-    # Login view
-    admin.add_view(LoginView(name='Login', endpoint='login'))
     # Mobile view handling
     admin.add_view(MobileView(name='Mobile', endpoint='mobile'))
     # User dash view handling
@@ -21,3 +20,6 @@ def add_admin_views(admin, app):
     admin.add_view(UserView(User, db.session, category='Admin', name='Users'))
     admin.add_view(HazardLocationView(
         HazardLocation, db.session, category='Admin', name='Hazard Locations'))
+
+    # Login view
+    admin.add_view(LoginView(name='Login', endpoint='login'))

@@ -29,6 +29,9 @@ class User(db.Model):
     def is_anonymous(self):
         return False
 
+    def has_role(self, role):
+        return self.user_group == role
+
 
 class UserLocation(db.Model):
 
