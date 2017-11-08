@@ -10,7 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
 
-    app = user_dash(server)
-    add_admin_views(admin, app)
-    with app.app_context():
+    with server.app_context():
+        app = user_dash(server)
+        add_admin_views(admin, app)
         app.run_server(host='0.0.0.0', port=args.port, debug=args.debug)
