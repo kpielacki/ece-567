@@ -1,6 +1,7 @@
 from flask import (Flask, redirect, url_for)
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import (Admin, BaseView, expose)
+import flask_login
 import os
 import sys
 
@@ -41,3 +42,10 @@ admin = Admin(
 )
 db = SQLAlchemy(server)
 admin.init_app(server)
+
+login_manager = flask_login.LoginManager()
+login_manager.init_app(server)
+
+with server.app_context():
+    db.Model.metadata.bind = db.engine
+    import hooks

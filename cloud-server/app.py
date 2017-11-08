@@ -2,7 +2,6 @@ import argparse
 from admin_app_config import (server, admin)
 from admin_views import add_admin_views
 from init_dash import user_dash
-import flask_login
 
 
 if __name__ == '__main__':
@@ -11,9 +10,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', default=False)
     args = parser.parse_args()
 
-    login_manager = flask_login.LoginManager()
-    login_manager.init_app(server)
-
     app = user_dash(server)
     add_admin_views(admin, app)
-    app.run_server(host='0.0.0.0', port=args.port, debug=args.debug)
+    with app.app_context():
+        app.run_server(host='0.0.0.0', port=args.port, debug=args.debug)

@@ -17,6 +17,18 @@ class User(db.Model):
     def __repr__(self):
         return 'Username: %s' % self.username
 
+    def is_active(self):
+        return self.active
+
+    def is_authenticated(self):
+        return True
+
+    def get_id(self):
+        return self.active
+
+    def is_anonymous(self):
+        return False
+
 
 class UserLocation(db.Model):
 
