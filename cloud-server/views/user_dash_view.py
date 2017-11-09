@@ -1,9 +1,13 @@
 from flask_admin import expose
+from flask_login import current_user
 from init_dash import user_dash
 from secure_views import SecureBaseView
 
 
 class UserDashView(SecureBaseView):
+
+    def is_visible(self):
+        return current_user.is_authenticated
 
     def __init__(self, *args, **kwargs):
         self.app = kwargs.pop('app', True)
