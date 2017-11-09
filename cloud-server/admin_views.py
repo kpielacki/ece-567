@@ -2,6 +2,7 @@ from admin_app_config import db
 from models import (User, HazardLocation)
 from views.home_view import HomeView
 from views.login_view import LoginView
+from views.logout_view import LogoutView
 from views.user_view import UserView
 from views.mobile_view import MobileView
 from views.user_dash_view import UserDashView
@@ -16,10 +17,11 @@ def add_admin_views(admin, app):
     # User dash view handling
     admin.add_view(UserDashView(name='User Portal', endpoint='userdash', app=app))
 
-    # Admin Portal Views
+    # Admin portal views
     admin.add_view(UserView(User, db.session, category='Admin', name='Users'))
     admin.add_view(HazardLocationView(
         HazardLocation, db.session, category='Admin', name='Hazard Locations'))
 
-    # Login view
+    # Login and Logout views
     admin.add_view(LoginView(name='Login', endpoint='login'))
+    admin.add_view(LogoutView(name='Logout', endpoint='logout'))

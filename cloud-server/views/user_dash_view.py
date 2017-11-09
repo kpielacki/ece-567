@@ -1,12 +1,13 @@
-from flask_admin import (BaseView, expose)
+from flask_admin import expose
 from init_dash import user_dash
+from secure_views import SecureBaseView
 
 
-class UserDashView(BaseView):
+class UserDashView(SecureBaseView):
 
     def __init__(self, *args, **kwargs):
         self.app = kwargs.pop('app', True)
-        BaseView.__init__(self, *args, **kwargs)
+        SecureBaseView.__init__(self, *args, **kwargs)
 
     @expose('/')
     def index(self):
