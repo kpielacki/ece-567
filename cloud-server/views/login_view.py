@@ -50,7 +50,7 @@ class LoginView(BaseView):
 
         # Return to home if user already logged in
         if current_user.is_authenticated:
-            return redirect('/home')
+            return redirect('/userdash')
 
         # Validate posted form
         if (request.method == 'POST') and form.validate():
