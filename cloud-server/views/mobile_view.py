@@ -4,9 +4,11 @@ from flask import (abort, Response, request, url_for, redirect, flash,
                    current_app)
 from flask_admin import (BaseView, expose)
 from flask_login import current_user
-from werkzeug.security import (generate_password_hash, check_password_hash)
-from models import User
 import json
+import pandas as pd
+from io import StringIO
+from models import User
+from werkzeug.security import (generate_password_hash, check_password_hash)
 
 
 class MobileView(BaseView):
@@ -14,7 +16,7 @@ class MobileView(BaseView):
     def is_visible(self):
         return False
 
-    def handle_request(self, data):
+    def handle_login_request(self, data):
         email = data.get('email', None)
         password = data.get('password', None)
         if email is None or password is None: return (400, 'Bad Request')
@@ -36,15 +38,46 @@ class MobileView(BaseView):
             return (500, 'Server Error')
         return (200, 'Registered New Account')
 
-    @expose('/', methods=('POST',))
-    def index(self):
-        if request.method == 'POST':
-            try:
-                request_dict = json.loads(request.data)
-            except Exception as e:
-                return abort(400)
+    def handle_json(self, data):
+        try:
+            return json.loads(request.data)
+        except Exception as e:
+            return None
 
-            code, msg = self.handle_request(request_dict)
+    @expose('/', methods=('GET',))
+    def index(self):
+        return Response('<b>TEST MOBILE</b>', status=200, mimetype='text/html')
+
+    @expose('/login/', methods=('POST',))
+    def login(self):
+        if request.method == 'POST':
+            login_data = self.handle_json(request.data)
+            if data_dict is None: return abort(400)
+            code, msg = self.handle_login_request(login_data)
             return Response(msg, status=code, mimetype='text/plain')
+        
+        return abort(400)
+
+    @expose('/echo/', methods=('POST',))
+    def echo(self):
+        content_type = request.mimetype
+        msg = ""
+        if content_type == 'application/json':
+            data_dict = self.handle_json(request.data)
+            if data_dict is None: return abort(400)
+            msg = 'JSON\n{}'.format(data_dict)
+            return Response(msg, status=200, mimetype='text/plain')
+        elif content_type == 'text/plain':
+            txt_data = request.data
+            msg = 'Plain Text\n{}'.format(txt_data)
+        elif content_type == 'text/csv':
+            try:
+                data_df = pd.read_csv(StringIO(request.data))
+                msg = 'CSV\n{}'.format(data_df.to_string())
+            except Exception as e:
+                print e.message
+                return abort(400)
         else:
             return abort(400)
+
+        return Response(msg, status=200, mimetype=content_type)
