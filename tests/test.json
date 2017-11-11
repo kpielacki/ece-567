@@ -1,0 +1,10 @@
+{
+  "user": "test1@gmail",
+  "session": "session id",
+  "table_name": "dummy_data",
+  "table": {
+    "field1": [0,1,2,4],
+    "field2": [0,3,21,41],
+    "field3": [2,1,2,4]
+  }
+}

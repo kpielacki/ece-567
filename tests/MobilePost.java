@@ -18,9 +18,9 @@
 // import android.widget.EditText;
 // import android.widget.TextView;
 // import android.util.Log;
-
-
 import server_config.ServerConfig;
+
+import java.lang.Integer;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -78,6 +78,10 @@ public class MobilePost {
         connection.setRequestProperty("Content-Type", content_type_str);
         connection.setRequestProperty("charset", "UTF-8");
         connection.setRequestProperty("Content-Length", Integer.toString(postDataLength));
+
+        // SESSION COOKE FOR FUTURE
+        // connection.setRequestProperty("Cookie","JSESSIONID=" + your_session_id);
+
         connection.setUseCaches(false);
         connection.connect();
 
@@ -104,15 +108,22 @@ public class MobilePost {
   }
 
   public static void main(String args[]) {
-    if (args.length != 1) {
-      System.out.println("Test string required as input");
+    if (args.length != 2) {
+      System.out.println("Content type and test string required as input");
+      System.out.println("  Content Types:");
+      for (ContentType value: ContentType.values()){
+        value.ordinal();
+        System.out.format("    %-6s: %d\n", value.name(), value.ordinal());
+      }
       System.exit(-1);
     }
 
     // Test mobile echo response
     MobilePost echoRequest = new MobilePost();
     String response;
-    response = echoRequest.doInBackground(args[0], "mobile/echo/", 0);
+    int content_type = Integer.parseInt(args[0]);
+
+    response = echoRequest.doInBackground(args[1], "mobile/echo/", content_type);
     System.out.println("---------- Server Response ----------");
     System.out.println(response);
     System.out.println("-------------------------------------");
