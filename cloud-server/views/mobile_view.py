@@ -72,7 +72,8 @@ class MobileView(BaseView):
             msg = 'Plain Text\n{}'.format(txt_data)
         elif content_type == 'text/csv':
             try:
-                data_df = pd.read_csv(StringIO(request.data))
+                csv_unicode_io = StringIO(request.data.decode('unicode-escape'))
+                data_df = pd.read_csv(csv_unicode_io)
                 msg = 'CSV\n{}'.format(data_df.to_string())
             except Exception as e:
                 print e.message
