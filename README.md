@@ -22,6 +22,7 @@
     * [Virutal Environment Guide](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
 - Install required modules
     * `pip install -r requirements.txt`
+    * `sudo apt-get install python-dev libmysqlclient-dev`
 - Set environment variables in "admin_app_config.py"
 - Run development server
     * `python app.py 8080`
