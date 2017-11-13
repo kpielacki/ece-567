@@ -4,7 +4,7 @@ from views.home_view import HomeView
 from views.login_view import LoginView
 from views.logout_view import LogoutView
 from views.user_view import UserView
-from views.mobile_view import MobileView
+from views.mobile_view import (MobileLoginView, MobileView)
 from views.user_dash_view import UserDashView
 from views.hazard_location_view import HazardLocationView
 
@@ -12,8 +12,12 @@ from views.hazard_location_view import HazardLocationView
 def add_admin_views(admin, app):
     # Home View
     admin.add_view(HomeView(name='Home', endpoint='home'))
+
     # Mobile view handling
+    admin.add_view(MobileLoginView(
+        name='Mobile Login', endpoint='mobilelogin'))
     admin.add_view(MobileView(name='Mobile', endpoint='mobile'))
+
     # User dash view handling
     admin.add_view(UserDashView(name='User Portal', endpoint='userdash', app=app))
 

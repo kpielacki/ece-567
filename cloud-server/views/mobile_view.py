@@ -1,14 +1,83 @@
 from admin_app_config import db
 import datetime
-from flask import (abort, Response, request, url_for, redirect, flash,
-                   current_app)
+from flask import (abort, Response, request, redirect, flash, current_app)
 from flask_admin import (BaseView, expose)
-from flask_login import current_user
+from flask_login import (current_user, login_user)
 import json
 import pandas as pd
 from io import StringIO
 from models import User
 from werkzeug.security import (generate_password_hash, check_password_hash)
+from wtforms.validators import (Length, Required, Regexp, Email)
+
+
+def handle_json(data):
+    try:
+        return json.loads(request.data)
+    except Exception as e:
+        return dict()
+
+
+class MobileLoginView(BaseView):
+
+    def is_visible(self):
+        return False
+
+    @expose('/', methods=('POST',))
+    def index(self):
+        # To be converted to JSON and used to respond
+        resp_dict = {'success': False, 'msg': None}
+
+        # Get JSON data from mobile request
+        data = handle_json(request.data)
+        email = data.get('email', None)
+        password = data.get('password', None)
+
+        # Handle bad user request
+        if email is None or password is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Bad user request'
+            return Response(resp_dict, status=400, mimetype='application/json')
+
+        valid_user = User.query.filter_by(email=email).first()
+        if not valid_user:
+            # Attempt to create new user
+            try:
+                pw_hash = generate_password_hash(password)
+                new_user = User(email=email, password=pw_hash,
+                                user_group='user', active=True)
+                db.session.add(new_user)
+                db.session.commit()
+                resp_dict['success'] = True
+                resp_dict['msg'] = 'Created new account'
+                return Response(json.dumps(resp_dict), status=200,
+                                mimetype='application/json')
+            except Exception as e:
+                resp_dict['success'] = False
+                resp_dict['msg'] = 'Something went wrong on our end'
+                return Response(json.dumps(resp_dict), status=500,
+                                mimetype='application/json')
+        elif not(valid_user.active):
+            # Account not activated
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Account not activated'
+            return Response(json.dumps(resp_dict), status=403,
+                            mimetype='application/json')
+        elif not check_password_hash(valid_user.password, password):
+            # Invalid email or password
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid email or password'
+            return Response(json.dumps(resp_dict), status=403,
+                            mimetype='application/json')
+        else:
+            # Valid email and passord
+            valid_user.login_date = datetime.datetime.now()
+            db.session.commit()
+            login_user(valid_user)
+            resp_dict['success'] = True
+            resp_dict['msg'] = 'Login successful'
+            return Response(json.dumps(resp_dict), status=200,
+                            mimetype='application/json')
 
 
 class MobileView(BaseView):
