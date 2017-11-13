@@ -12,10 +12,39 @@ from wtforms.validators import (Length, Required, Regexp, Email)
 
 
 def handle_json(data):
+    """Attempts to create dictionary object from data request.
+    Args:
+        data (str): String representation of JSON.
+    
+    Returns:
+        dict: If invalid JSON returns empty dictionary.
+    """
     try:
-        return json.loads(request.data)
+        return json.loads(data)
     except Exception as e:
         return dict()
+
+
+def validate_user(email, session_id):
+    """Validates user and session.
+    
+    Args:
+        email (str): User email for session.
+        session_id (str): Logged in session ID.
+    
+    Returns:
+        int: User ID or -1 if not valid user.
+    """
+    valid_user = User.query.filter_by(email=email).first()
+
+    # Validate if user exists
+    if not valid_user: return -1
+
+    # Validate if user account is active
+    if not(valid_user.active): return -1
+
+    # TODO: Validate cookie or session ID tied to email
+    return valid_user.id
 
 
 class MobileLoginView(BaseView):
@@ -69,15 +98,15 @@ class MobileLoginView(BaseView):
             resp_dict['msg'] = 'Invalid email or password'
             return Response(json.dumps(resp_dict), status=403,
                             mimetype='application/json')
-        else:
-            # Valid email and passord
-            valid_user.login_date = datetime.datetime.now()
-            db.session.commit()
-            login_user(valid_user)
-            resp_dict['success'] = True
-            resp_dict['msg'] = 'Login successful'
-            return Response(json.dumps(resp_dict), status=200,
-                            mimetype='application/json')
+
+        # Valid email and passord
+        valid_user.login_date = datetime.datetime.now()
+        db.session.commit()
+        login_user(valid_user)
+        resp_dict['success'] = True
+        resp_dict['msg'] = 'Login successful'
+        return Response(json.dumps(resp_dict), status=200,
+                        mimetype='application/json')
 
 
 class MobileView(BaseView):
@@ -113,9 +142,15 @@ class MobileView(BaseView):
         except Exception as e:
             return None
 
+    def handle_user_location_upload(self, df, user_id):
+        return True
+
+    def handle_user_steps_upload(self, df, user_id):
+        return True
+
     @expose('/', methods=('GET',))
     def index(self):
-        return Response('<b>TEST MOBILE</b>', status=200, mimetype='text/html')
+        return Response('Mobile Handle', status=200, mimetype='text/html')
 
     @expose('/login/', methods=('POST',))
     def login(self):
@@ -141,7 +176,8 @@ class MobileView(BaseView):
             msg = 'Plain Text\n{}'.format(txt_data)
         elif content_type == 'text/csv':
             try:
-                csv_unicode_io = StringIO(request.data.decode('unicode-escape'))
+                csv_unicode_io = StringIO(
+                    request.data.decode('unicode-escape'))
                 data_df = pd.read_csv(csv_unicode_io)
                 msg = 'CSV\n{}'.format(data_df.to_string())
             except Exception as e:
@@ -151,3 +187,74 @@ class MobileView(BaseView):
             return abort(400)
 
         return Response(msg, status=200, mimetype=content_type)
+
+    @expose('/uploadtable/', methods=('POST',))
+    def upload_table(self):
+        resp_dict = {
+            'success': False,
+            'msg': None
+        }
+
+        # Only except JSON data
+        if request.mimetype != 'application/json':
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Only JSON data accepted'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Validate JSON
+        data_dict = handle_json(request.data)
+        if not data_dict:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid JSON data'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Validate email and session
+        email = data_dict.get('email', None)
+        if email is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No user found'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        session_id = data_dict.get('session_id', None)
+        if session is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No session ID provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        user_id = validate_user(email, session_id)
+
+        if user_id < 0:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid email or session provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+
+        # Validate table entries
+        table_data = data_dict.get('table_data', None)
+        if table_data is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No table data provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+        try:
+            df = pd.DataFrame(table_data)
+        except Exception:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Improper table data format'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Handle data upload per table differently
+        table = data_dict.get('table', None)
+        if table == 'user_location':
+            self.handle_user_location_upload(df, user_id)
+        elif table == 'user_steps':
+            self.handle_user_steps_upload(df, user_id)
+
+        # Response for tables that are not handled
+        resp_dict['success'] = False
+        resp_dict['msg'] = 'Unsupported table in POST request'
+        json_resp = json.dumps(resp_dict)
+        return Response(json_resp, status=400, mimetype='application/json')
