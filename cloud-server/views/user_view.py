@@ -6,7 +6,7 @@ class UserView(SecureModelView):
 
     can_create = True
     can_edit = True
-    can_delete = False
+    can_delete = True
 
     column_list = (
         'id',
