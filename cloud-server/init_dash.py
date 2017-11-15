@@ -11,11 +11,6 @@ from models import (UserLocation, UserSteps, HazardSummary, HazardLocation)
 import numpy as np
 
 
-about_dict = {
-    'Air Pollution': "Exposure to air pollution may cause a wide range of health effects. These vary from mild symptoms such as irritation of your eyes, nose and throat, to more serious conditions such as lung (respiratory) and heart (cardiovascular) diseases. Depending on the particular pollutant, short-term exposure has different health effects to long-term exposure. Short-term exposure exacerbates, or makes worse, pre-existing illnesses such as asthma, chronic bronchitis (also called chronic obstructive pulmonary disease or COPD) or heart disease. Longer-term exposure can actually cause the development of respiratory and heart conditions and shorten someone's life."
-}
-
-
 def user_dash(server):
     USER_ID_TEMP = 1
     MAP_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxpc2hvYmVpcmkiLCJhIjoiY2ozYnM3YTUxMD' \
@@ -68,10 +63,6 @@ def user_dash(server):
                     }
                 ),
                 html.H3('Health Hazards'),
-                dcc.DatePickerSingle(
-                    id='map-date',
-                    date=datetime.date.today()
-                ),
                 dcc.Dropdown(
                     id='map-days',
                     options=[{'label': label, 'value': value}
