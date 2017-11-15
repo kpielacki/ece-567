@@ -15,7 +15,7 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
-        return 'Username: %s' % self.username
+        return 'Email: %s' % self.email
 
     def is_active(self):
         return self.active
@@ -24,7 +24,7 @@ class User(db.Model):
         return True
 
     def get_id(self):
-        return self.active
+        return self.id
 
     def is_anonymous(self):
         return False
