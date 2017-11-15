@@ -1,11 +1,12 @@
 from admin_app_config import db
-from models import (User, HazardLocation)
+from models import (User, HazardSummary, HazardLocation)
 from views.home_view import HomeView
 from views.login_view import LoginView
 from views.logout_view import LogoutView
 from views.user_view import UserView
 from views.mobile_view import (MobileLoginView, MobileView)
 from views.user_dash_view import UserDashView
+from views.hazard_summary_view import HazardSummaryView
 from views.hazard_location_view import HazardLocationView
 
 
@@ -23,6 +24,8 @@ def add_admin_views(admin, app):
 
     # Admin portal views
     admin.add_view(UserView(User, db.session, category='Admin', name='Users'))
+    admin.add_view(HazardSummaryView(
+        HazardSummary, db.session, category='Admin', name='Hazard Summary'))
     admin.add_view(HazardLocationView(
         HazardLocation, db.session, category='Admin', name='Hazard Locations'))
 

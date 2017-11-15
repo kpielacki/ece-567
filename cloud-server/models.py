@@ -62,16 +62,39 @@ class UserSteps(db.Model):
             self.user_id, self.date)
 
 
+class HazardSummary(db.Model):
+
+    __tablename__ = 'hazard_summary'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    hazard_category = db.Column(db.String(100), nullable=False, unique=True)
+    summary= db.Column(db.Text, nullable=False)
+    source = db.Column(db.Text, nullable=False)
+
+    def __repr__(self):
+        return 'Hazard Category: {}'.format(self.hazard_category)
+
+
 class HazardLocation(db.Model):
 
     __tablename__ = 'hazard_location'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    hazard_category = db.Column(db.String(100), nullable=False)
+    hazard_category = db.Column(
+        db.String(100),
+        db.ForeignKey('hazard_summary.hazard_category'),
+        nullable=False
+    )
     place_name = db.Column(db.String(100))
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
+    summary = db.relationship(
+        HazardSummary,
+        backref=db.backref('hazard_location', uselist=False),
+        uselist=False,
+        lazy='joined'
+    )
 
     def __repr__(self):
         return 'Hazard Category: {}\nPlace Name: {}'.format(
-            self.username, self.place_name)
+            self.hazard_category, self.place_name)
