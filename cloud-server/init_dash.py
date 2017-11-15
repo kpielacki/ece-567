@@ -21,6 +21,12 @@ def user_dash(server):
     MAP_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxpc2hvYmVpcmkiLCJhIjoiY2ozYnM3YTUxMD' \
                        'AxeDMzcGNjbmZyMmplZiJ9.ZjmQ0C2MNs1AzEBC_Syadg'
     HEALTH_DROPDOWN_OPTIONS = ['Step Count', 'Calories']
+    HEALTH_DAYS_OPTIONS = (
+        ('Past Week', '7'),
+        ('Past Month', '31'),
+        ('Past Year', '365'),
+    )
+    MAP_DAYS_OPTIONS = HEALTH_DAYS_OPTIONS
     query = db.session.query(
         HazardLocation.hazard_category.distinct().label('s'))
     hazard_options = [{'label': row.s, 'value': row.s}
@@ -44,16 +50,33 @@ def user_dash(server):
             html.Div([
                 html.H3('Activity Trend'),
                 dcc.Dropdown(
+                    id='health-days-dropdown',
+                    options=[{'label': label, 'value': value}
+                             for label, value in HEALTH_DAYS_OPTIONS],
+                    value=HEALTH_DAYS_OPTIONS[1][1]
+                ),
+                dcc.Dropdown(
                     id='health-dropdown',
                     options=[{'label': s, 'value': s}
                              for s in HEALTH_DROPDOWN_OPTIONS],
                     value=HEALTH_DROPDOWN_OPTIONS[0]
                 ),
-                dcc.Graph(id='health-trend'),
+                dcc.Graph(
+                    id='health-trend',
+                    style={
+                        'max-height': '300px'
+                    }
+                ),
                 html.H3('Health Hazards'),
                 dcc.DatePickerSingle(
                     id='map-date',
                     date=datetime.date.today()
+                ),
+                dcc.Dropdown(
+                    id='map-days',
+                    options=[{'label': label, 'value': value}
+                             for label, value in MAP_DAYS_OPTIONS],
+                    value=MAP_DAYS_OPTIONS[1][1]
                 ),
                 dcc.Dropdown(
                     id='hazard-dropdown',
@@ -67,12 +90,9 @@ def user_dash(server):
     ], style={'padding-bottom': '20px'})
 
     def get_user_locations(date):
-        next_date = datetime.datetime.strptime(
-            date, '%Y-%m-%d') + datetime.timedelta(days=1)  
         result = db.session.query(UserLocation) \
             .filter(UserLocation.user_id == USER_ID_TEMP) \
-            .filter(UserLocation.date >= date) \
-            .filter(UserLocation.date < next_date).all()
+            .filter(UserLocation.date >= date).all()
 
         user_dts = []
         user_latitudes = []
@@ -123,22 +143,26 @@ def user_dash(server):
         )
 
     @app.callback(Output("map-graph", "figure"),
-                  [Input('map-date', 'date'),
+                  [Input('map-days', 'value'),
                    Input('hazard-dropdown', 'value')])
-    def update_graph(date, value):
-        bearing = 0
-        zoom = 12.0
-
+    def update_graph(day_str, value):
         try:
-            user_data, init_lat, init_long = get_user_locations(date)
+            day_cnt = int(day_str)
         except:
-            return "Map Data Unavailable"
+            return "Invalid day input"
+
+        if day_cnt < 1 or day_cnt > 365:
+            return "Invalid day count value"
 
         try:
+            date_from = datetime.date.today() - datetime.timedelta(days=day_cnt)  
+            user_data, init_lat, init_long = get_user_locations(date_from)
             hazard_data = get_hazard_locations(value)
         except:
             return "Map Data Unavailable"
 
+        bearing = 0
+        zoom = 12.0
         return go.Figure(
             data=Data([user_data, hazard_data]),
             layout=Layout(
@@ -159,9 +183,11 @@ def user_dash(server):
             )
         )
 
-    def get_recent_activity(value):
+    def get_recent_activity(value, day_cnt, user_id):
+        date_from = datetime.date.today() - datetime.timedelta(days=day_cnt)  
         result = db.session.query(UserSteps) \
-            .filter(UserSteps.user_id == USER_ID_TEMP) \
+            .filter(UserSteps.user_id == user_id) \
+            .filter(UserSteps.date >= date_from) \
             .order_by(UserSteps.date.desc()).all()
         xs = []
         ys = []
@@ -171,11 +197,21 @@ def user_dash(server):
         return xs, ys
 
     @app.callback(Output("health-trend", "figure"),
-                  [Input('health-dropdown', 'value')])
-    def update_graph(value):
-        xs, ys = get_recent_activity(value)
+                  [Input('health-days-dropdown', 'value'),
+                   Input('health-dropdown', 'value')])
+    def update_graph(days_value, value):
+        # Prevent request modification
         try:
-            xs, ys = get_recent_activity(value)
+            day_cnt = int(days_value)
+        except:
+            return "Invalid Day Selection"
+
+        # Prevent larger queries
+        if day_cnt < 1 or day_cnt > 365:
+            return "Invalid Day Selection"
+
+        try:
+            xs, ys = get_recent_activity(value, day_cnt, USER_ID_TEMP)
         except:
             return "User Data Unavailable"
 
