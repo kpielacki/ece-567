@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output, State, Event
 import plotly.plotly as py
 from plotly import graph_objs as go
 from plotly.graph_objs import *
-from models import (UserLocation, UserSteps, HazardLocation)
+from models import (UserLocation, UserSteps, HazardSummary, HazardLocation)
 import numpy as np
 
 
@@ -226,11 +226,26 @@ def user_dash(server):
     @app.callback(Output("about-hazard", "children"),
                   [Input('hazard-dropdown', 'value')])
     def update_info(value):
-        text_val = about_dict.get(
-            value, 'Information will be available in the future.')
+        result = db.session.query(HazardSummary) \
+            .filter(HazardSummary.hazard_category == value).first()
+
+        # Return message if no summary available
+        if result is None:
+            return html.P('Information will be available in the future.')
+
+        if result.source is None:
+            src_content = html.P("Source unavailable")
+        else:
+            src_content = html.A(
+                'Source',
+                id='hazard-source',
+                href=result.source, target="_blank"
+            )
+
         return html.Div([
             html.H4('About {}'.format(value)),
-            html.P(text_val)
+            src_content,
+            html.P(result.summary)
         ])
 
     return app
