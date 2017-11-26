@@ -13,7 +13,9 @@ feedback.
     * `sudo apt-get install python-dev libmysqlclient-dev`
 - Set environment variables in "admin_app_config.py"
 - Run development server
-    * `python app.py 8080`
+    * `python main.py 8080`
+- See server options
+    * `python main.py --help`
 
 ## Deadlines
 | Item                                                | Due Date     |
