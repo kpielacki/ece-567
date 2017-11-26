@@ -6,6 +6,7 @@ from views.logout_view import LogoutView
 from views.user_view import UserView
 from views.mobile_view import (MobileLoginView, MobileView)
 from views.user_dash_view import UserDashView
+from views.business_dash_view import BusinessDashView
 from views.hazard_summary_view import HazardSummaryView
 from views.hazard_location_view import HazardLocationView
 
@@ -21,6 +22,7 @@ def add_admin_views(admin, app):
 
     # User dash view handling
     admin.add_view(UserDashView(name='User Portal', endpoint='userdash', app=app))
+    admin.add_view(BusinessDashView(name='Business Portal', endpoint='businessdash', app=app))
 
     # Admin portal views
     admin.add_view(UserView(User, db.session, category='Admin', name='Users'))
