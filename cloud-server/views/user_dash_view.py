@@ -1,7 +1,7 @@
 from flask_admin import expose
 from flask_login import current_user
-from init_dash import user_dash
 from secure_views import SecureBaseView
+from dashboards import user_dash
 
 
 class UserDashView(SecureBaseView):
