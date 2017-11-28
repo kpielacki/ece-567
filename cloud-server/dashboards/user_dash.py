@@ -1,5 +1,6 @@
 from plotly_app import app
 from admin_app_config import db
+from utils import vicinity_rate
 
 
 import dash
@@ -26,6 +27,14 @@ with app.server.app_context():
         ('Past Year', '365'),
     )
     MAP_DAYS_OPTIONS = HEALTH_DAYS_OPTIONS
+    MILE_OPTIONS = (
+        ('0.1 Miles', '0.1'),
+        ('0.5 Miles', '0.5'),
+        ('1 Miles', '1'),
+        ('5 Miles', '5'),
+        ('10 Miles', '10'),
+        ('25 Miles', '25'),
+    )
     query = db.session.query(
         HazardLocation.hazard_category.distinct().label('s'))
     hazard_options = [{'label': row.s, 'value': row.s}
@@ -36,12 +45,14 @@ with app.server.app_context():
             html.H1('User Portal'),
             html.Div([
                 html.H3('Activity Trend'),
+                html.P('Time Interval', className='label'),
                 dcc.Dropdown(
                     id='health-days-dropdown',
                     options=[{'label': label, 'value': value}
                              for label, value in HEALTH_DAYS_OPTIONS],
                     value=HEALTH_DAYS_OPTIONS[1][1]
                 ),
+                html.P('Trend Type', className='label'),
                 dcc.Dropdown(
                     id='health-dropdown',
                     options=[{'label': s, 'value': s}
@@ -55,16 +66,25 @@ with app.server.app_context():
                     }
                 ),
                 html.H3('Health Hazards'),
+                html.P('Time Period', className='label'),
                 dcc.Dropdown(
                     id='map-days',
                     options=[{'label': label, 'value': value}
                              for label, value in MAP_DAYS_OPTIONS],
                     value=MAP_DAYS_OPTIONS[1][1]
                 ),
+                html.P('Hazard Category', className='label'),
                 dcc.Dropdown(
                     id='hazard-dropdown',
                     options=hazard_options,
                     value=hazard_options[0]['value']
+                ),
+                html.P('Distance', className='label'),
+                dcc.Dropdown(
+                    id='mile-dropdown',
+                    options=[{'label': label, 'value': value}
+                             for label, value in MILE_OPTIONS],
+                    value=MILE_OPTIONS[0][1]
                 ),
                 dcc.Graph(id='map-graph'),
                 html.Div([], id='about-hazard'),
@@ -100,7 +120,6 @@ with app.server.app_context():
             ),
         ), init_lat, init_long
     
-    
     def get_hazard_locations(value):
         result = db.session.query(HazardLocation) \
             .filter(HazardLocation.hazard_category == value).all()
@@ -125,6 +144,19 @@ with app.server.app_context():
             ),
         )
     
+    def get_vicinity_summary(uid, hazard_type, day_cnt, mile_thresh):
+        date_from = datetime.date.today() - datetime.timedelta(days=day_cnt) 
+        results = db.session.query(UserLocation) \
+            .filter(UserLocation.user_id == uid) \
+            .filter(UserLocation.date >= date_from).all()
+        user_points = [(r.latitude, r.longitude) for r in results]
+
+        results = db.session.query(HazardLocation) \
+            .filter(HazardLocation.hazard_category == hazard_type).all()
+        src_points = [(r.latitude, r.longitude) for r in results]
+
+        return vicinity_rate(src_points, user_points, mile_thresh)
+
     @app.callback(Output("map-graph", "figure"),
                   [Input('map-days', 'value'),
                    Input('hazard-dropdown', 'value')])
@@ -168,8 +200,8 @@ with app.server.app_context():
 
     def steps_to_calories(step_cnt, weight):
         """Calculates the calories burned from total steps.
-
         https://www.livestrong.com/article/238020-how-to-convert-pedometer-steps-to-calories/
+
         :step_cnt (Integer): Number of steps.
 
         Returns (Integer): Number of calories burned.
@@ -233,8 +265,29 @@ with app.server.app_context():
         }
     
     @app.callback(Output("about-hazard", "children"),
-                  [Input('hazard-dropdown', 'value')])
-    def update_info(value):
+                  [Input('hazard-dropdown', 'value'),
+                   Input('map-days', 'value'),
+                   Input('mile-dropdown', 'value')])
+    def update_info(value, days, miles):
+        # Prevent request modification
+        try:
+            day_cnt = int(days)
+        except:
+            return html.P('Invalid Day Selection')
+
+        # Prevent larger queries
+        if day_cnt < 1 or day_cnt > 365:
+            return html.P('Invalid Day Selection')
+
+        # Prevent request modification
+        try:
+            miles = float(miles)
+        except:
+            return html.P('Invalid Mile Selection')
+
+        if miles < 0 or miles > 25:
+            return html.P('Invalid Mile Selection')
+
         result = db.session.query(HazardSummary) \
             .filter(HazardSummary.hazard_category == value).first()
     
@@ -250,8 +303,19 @@ with app.server.app_context():
                 id='hazard-source',
                 href=result.source, target="_blank"
             )
-    
+
+        try:
+            hazard_rate = get_vicinity_summary(USER_ID_TEMP, value, day_cnt,
+                miles)
+        except:
+            hazard_rate = 0
+        
+        vicinity_msg = 'You spend {:.0%} of your time within {:.1f} miles of ' \
+                        'a {} zone.'.format(hazard_rate, miles, value.lower())
+
         return html.Div([
+            html.H4('Vicinity Summary'),
+            html.P(vicinity_msg),
             html.H4('About {}'.format(value)),
             src_content,
             html.P(result.summary)
