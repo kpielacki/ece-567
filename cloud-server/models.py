@@ -12,6 +12,7 @@ class User(db.Model):
     active = db.Column(db.Boolean, nullable=False)
     birthday = db.Column(db.DateTime, nullable=False)
     gender = db.Column(db.String(50), nullable=False)
+    weight = db.Column(db.Integer, nullable=True)
     last_login = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
