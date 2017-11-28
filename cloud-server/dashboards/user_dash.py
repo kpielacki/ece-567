@@ -10,7 +10,8 @@ import datetime
 import plotly.plotly as py
 from plotly import graph_objs as go
 from plotly.graph_objs import *
-from models import (UserLocation, UserSteps, HazardSummary, HazardLocation)
+from models import (User, UserLocation, UserSteps, HazardSummary,
+                    HazardLocation)
 import numpy as np
 
 
@@ -164,24 +165,48 @@ with app.server.app_context():
                 ),
             )
         )
+
+    def steps_to_calories(step_cnt, weight):
+        """Calculates the calories burned from total steps.
+
+        https://www.livestrong.com/article/238020-how-to-convert-pedometer-steps-to-calories/
+        :step_cnt (Integer): Number of steps.
+
+        Returns (Integer): Number of calories burned.
+        """
+        return (float(0.57 * weight) / 2200) * step_cnt
     
-    def get_recent_activity(value, day_cnt, user_id):
+    def get_recent_activity(value, day_cnt, user_id, trend_type):
         date_from = datetime.date.today() - datetime.timedelta(days=day_cnt)  
         result = db.session.query(UserSteps) \
             .filter(UserSteps.user_id == user_id) \
             .filter(UserSteps.date >= date_from) \
             .order_by(UserSteps.date.desc()).all()
+
         xs = []
         ys = []
         for r in result:
             xs.append(r.date)
             ys.append(r.step_count)
+
+        if trend_type.strip() == 'Calories':
+            result = db.session.query(User).filter(User.id == user_id).first()
+            weight = result.weight
+
+            # Use average if weight not entered
+            if weight is None:
+                if result.gender is None: weight = 180
+                elif result.gender.lower() == 'male': weight = 180
+                else: weight = 166
+            for idx, y in enumerate(ys):
+                ys[idx] = steps_to_calories(y, weight)
+
         return xs, ys
     
     @app.callback(Output("health-trend", "figure"),
                   [Input('health-days-dropdown', 'value'),
                    Input('health-dropdown', 'value')])
-    def update_graph(days_value, value):
+    def update_graph(days_value, trend_type):
         # Prevent request modification
         try:
             day_cnt = int(days_value)
@@ -193,8 +218,10 @@ with app.server.app_context():
             return "Invalid Day Selection"
     
         try:
-            xs, ys = get_recent_activity(value, day_cnt, USER_ID_TEMP)
-        except:
+            xs, ys = get_recent_activity(value, day_cnt, USER_ID_TEMP,
+                trend_type)
+        except Exception as e:
+            print e.message
             return "User Data Unavailable"
     
         return {
