@@ -14,19 +14,17 @@ from plotly.graph_objs import *
 from models import (User, UserLocation, UserSteps, HazardSummary,
                     HazardLocation)
 import numpy as np
+from flask_security import (Security, SQLAlchemyUserDatastore, UserMixin,
+                            RoleMixin, current_user, login_required)
 
 
 with app.server.app_context():
-
     GOOD_GLYPH = html.Span(className='glyphicon glyphicon-ok',
                            style={'color': 'green'})
     WARN_GLYPH = html.Span(className='glyphicon glyphicon-warning-sign',
                            style={'color': 'orange'})
     BAD_GLYPH = html.Span(className='glyphicon glyphicon-remove',
                            style={'color': 'red'})
-
-
-    USER_ID_TEMP = 1
     MAP_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxpc2hvYmVpcmkiLCJhIjoiY2ozYnM3YTUxMD' \
                        'AxeDMzcGNjbmZyMmplZiJ9.ZjmQ0C2MNs1AzEBC_Syadg'
     HEALTH_DROPDOWN_OPTIONS = ['Step Count', 'Calories']
@@ -100,10 +98,20 @@ with app.server.app_context():
             ]),
         ], className="container")
     ], style={'padding-bottom': '20px'})
+
+    def get_user_id():
+        """Get current logged in user ID.
+        
+        If login disabled for debugging returns 1.
+
+        :returns: (int) ID of current user.
+        """
+        if current_user.id is None: return 1
+        return current_user.id
     
-    def get_user_locations(date):
+    def get_user_locations(date, user_id):
         result = db.session.query(UserLocation) \
-            .filter(UserLocation.user_id == USER_ID_TEMP) \
+            .filter(UserLocation.user_id == user_id) \
             .filter(UserLocation.date >= date).all()
     
         user_dts = []
@@ -172,6 +180,7 @@ with app.server.app_context():
                    Input('hazard-dropdown', 'value'),
                    Input('mile-dropdown', 'value')])
     def update_graph(day_str, value, miles):
+        uid = get_user_id()
         try:
             day_cnt = int(day_str)
         except:
@@ -191,7 +200,7 @@ with app.server.app_context():
 
         try:
             date_from = datetime.date.today() - datetime.timedelta(days=day_cnt)  
-            user_data, init_lat, init_long = get_user_locations(date_from)
+            user_data, init_lat, init_long = get_user_locations(date_from, uid)
             hazard_data = get_hazard_locations(value, miles)
         except:
             return "Map Data Unavailable"
@@ -259,6 +268,8 @@ with app.server.app_context():
                   [Input('health-days-dropdown', 'value'),
                    Input('health-dropdown', 'value')])
     def update_graph(days_value, trend_type):
+        uid = get_user_id()
+
         # Prevent request modification
         try:
             day_cnt = int(days_value)
@@ -270,8 +281,7 @@ with app.server.app_context():
             return "Invalid Day Selection"
     
         try:
-            xs, ys = get_recent_activity(value, day_cnt, USER_ID_TEMP,
-                trend_type)
+            xs, ys = get_recent_activity(value, day_cnt, uid, trend_type)
         except Exception as e:
             print e.message
             return "User Data Unavailable"
@@ -289,6 +299,7 @@ with app.server.app_context():
                    Input('map-days', 'value'),
                    Input('mile-dropdown', 'value')])
     def update_info(value, days, miles):
+        uid = get_user_id()
         # Prevent request modification
         try:
             day_cnt = int(days)
@@ -325,8 +336,7 @@ with app.server.app_context():
             )
 
         try:
-            hazard_rate = get_vicinity_summary(USER_ID_TEMP, value, day_cnt,
-                miles)
+            hazard_rate = get_vicinity_summary(uid, value, day_cnt, miles)
         except:
             hazard_rate = 0
 
