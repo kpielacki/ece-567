@@ -1,6 +1,6 @@
 from plotly_app import app
 from admin_app_config import db
-from utils import vicinity_rate
+from utils import (vicinity_rate, GOOD_GLYPH, WARN_GLYPH, BAD_GLYPH)
 
 
 import dash
@@ -19,12 +19,6 @@ from flask_security import (Security, SQLAlchemyUserDatastore, UserMixin,
 
 
 with app.server.app_context():
-    GOOD_GLYPH = html.Span(className='glyphicon glyphicon-ok',
-                           style={'color': 'green'})
-    WARN_GLYPH = html.Span(className='glyphicon glyphicon-warning-sign',
-                           style={'color': 'orange'})
-    BAD_GLYPH = html.Span(className='glyphicon glyphicon-remove',
-                           style={'color': 'red'})
     MAP_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxpc2hvYmVpcmkiLCJhIjoiY2ozYnM3YTUxMD' \
                        'AxeDMzcGNjbmZyMmplZiJ9.ZjmQ0C2MNs1AzEBC_Syadg'
     HEALTH_DROPDOWN_OPTIONS = ['Step Count', 'Calories']

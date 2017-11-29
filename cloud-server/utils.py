@@ -1,5 +1,14 @@
+import dash_html_components as html
 from geopy.point import Point
 from geopy.distance import vincenty
+
+
+GOOD_GLYPH = html.Span(className='glyphicon glyphicon-ok',
+                       style={'color': 'green'})
+WARN_GLYPH = html.Span(className='glyphicon glyphicon-warning-sign',
+                       style={'color': 'orange'})
+BAD_GLYPH = html.Span(className='glyphicon glyphicon-remove',
+                       style={'color': 'red'})
 
 
 def vicinity_rate(src_points, comp_points, mile_thresh):
