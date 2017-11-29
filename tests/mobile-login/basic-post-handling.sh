@@ -1,4 +1,4 @@
-!#/bin/bash
+#!/bin/bash
 
 echo ""
 echo "ONLY USED TO TEST BASIC POST HANDLING AND IS NOT AN ACCEPTANCE TEST"
