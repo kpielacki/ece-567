@@ -1,5 +1,6 @@
 from plotly_app import app
 from admin_app_config import db
+from utils import (vicinity_rate, GOOD_GLYPH, WARN_GLYPH, BAD_GLYPH)
 
 import dash
 import dash_core_components as dcc
@@ -45,7 +46,6 @@ with app.server.app_context():
             ]),
         ], className="container")
     ], style={'padding-bottom': '20px'})
-
 
     def get_profile(uid):
         result = db.session.query(User).filter(User.id == uid).first()
@@ -97,6 +97,44 @@ with app.server.app_context():
             },
             style={'max-height': '300px'}
         )
+
+    def get_hazard_summary(uid):
+        date_from = datetime.date.today() - datetime.timedelta(days=365)
+        hazards = db.session.query(HazardSummary) \
+                  .order_by(HazardSummary.hazard_category.asc()).all()
+
+        summary = []
+        for hazard in hazards:
+            miles = hazard.bad_distance
+            if miles is None: miles = 0.1
+            category = hazard.hazard_category
+
+            # Get hazard points
+            results = db.session.query(HazardLocation) \
+                .filter(HazardLocation.hazard_category == category).all()
+            hazard_points = [(r.latitude, r.longitude) for r in results]
+
+            # Get user points
+            results = db.session.query(UserLocation) \
+                .filter(UserLocation.user_id == uid) \
+                .filter(UserLocation.date >= date_from).all()
+            user_points = [(r.latitude, r.longitude) for r in results]
+            rate = vicinity_rate(hazard_points, user_points, 0.1)
+            vicinity_msg = 'The user has spent {:.0%} of their time within ' \
+                           'the not recommended distance of {:.1f} miles ' \
+                           'near a {} zone.'.format(rate, miles,
+                                                    category.lower())
+            if rate / miles <= 0.3: glyph = GOOD_GLYPH
+            elif rate / miles < 0.7: glyph = WARN_GLYPH
+            else: glyph = BAD_GLYPH
+            summary.append(html.Div([
+                glyph,
+                html.P(
+                    vicinity_msg,
+                    style={'display': 'inline', 'padding-left': '10px'}
+                )
+            ]))
+        return html.Div(summary)
     
     @app.callback(Output("content", "children"),
                   [Input('uid-dropdown', 'value')])
@@ -109,7 +147,7 @@ with app.server.app_context():
             gender = 'N/A'
 
         try:
-            overview = get_overview(uid)
+            overview = get_hazard_summary(uid)
         except:
             overview = html.P('Overview Not Available')
 
