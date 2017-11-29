@@ -129,7 +129,7 @@ with app.server.app_context():
             ),
         ), init_lat, init_long
     
-    def get_hazard_locations(value):
+    def get_hazard_locations(value, miles):
         result = db.session.query(HazardLocation) \
             .filter(HazardLocation.hazard_category == value).all()
         names = []
@@ -140,6 +140,7 @@ with app.server.app_context():
             latitudes.append(r.latitude)
             longitudes.append(r.longitude)
     
+        marker_size = 100 * miles
         return Scattermapbox(
             lat=latitudes,
             lon=longitudes,
@@ -149,7 +150,7 @@ with app.server.app_context():
             marker=Marker(
                 color='red',
                 opacity='0.2',
-                size=100,
+                size=marker_size
             ),
         )
     
@@ -168,8 +169,9 @@ with app.server.app_context():
 
     @app.callback(Output("map-graph", "figure"),
                   [Input('map-days', 'value'),
-                   Input('hazard-dropdown', 'value')])
-    def update_graph(day_str, value):
+                   Input('hazard-dropdown', 'value'),
+                   Input('mile-dropdown', 'value')])
+    def update_graph(day_str, value, miles):
         try:
             day_cnt = int(day_str)
         except:
@@ -177,11 +179,20 @@ with app.server.app_context():
     
         if day_cnt < 1 or day_cnt > 365:
             return "Invalid day count value"
-    
+
+        # Prevent request modification
+        try:
+            miles = float(miles)
+        except:
+            return html.P('Invalid Mile Selection')
+
+        if miles < 0 or miles > 25:
+            return html.P('Invalid Mile Selection')
+
         try:
             date_from = datetime.date.today() - datetime.timedelta(days=day_cnt)  
             user_data, init_lat, init_long = get_user_locations(date_from)
-            hazard_data = get_hazard_locations(value)
+            hazard_data = get_hazard_locations(value, miles)
         except:
             return "Map Data Unavailable"
     
@@ -320,9 +331,9 @@ with app.server.app_context():
             hazard_rate = 0
 
         # Symbol based on hazard rate
-        if hazard_rate <= 0.3:
+        if hazard_rate / miles <= 0.3:
             glyph = GOOD_GLYPH
-        elif hazard_rate < 0.7:
+        elif hazard_rate / miles < 0.7:
             glyph = WARN_GLYPH
         else:
             glyph = BAD_GLYPH
