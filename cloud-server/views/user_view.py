@@ -16,6 +16,7 @@ class UserView(SecureModelView):
         'active',
         'birthday',
         'gender',
+        'weight',
         'last_login',
     )
 
