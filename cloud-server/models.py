@@ -71,6 +71,7 @@ class HazardSummary(db.Model):
     hazard_category = db.Column(db.String(100), nullable=False, unique=True)
     summary= db.Column(db.Text, nullable=False)
     source = db.Column(db.Text, nullable=False)
+    bad_distance = db.Column(db.Float, nullable=False)
 
     def __repr__(self):
         return 'Hazard Category: {}'.format(self.hazard_category)

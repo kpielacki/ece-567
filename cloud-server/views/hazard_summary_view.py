@@ -8,7 +8,9 @@ class HazardSummaryView(SecureModelView):
     can_edit = True
     can_delete = False
 
-    column_list = ('id', 'hazard_category', 'summary', 'source')
-    column_searchable_list = ['hazard_category', 'summary', 'source']
+    column_list = ('id', 'hazard_category', 'bad_distance', 'summary',
+                   'source')
+    column_searchable_list = ['hazard_category', 'bad_distance', 'summary',
+                              'source']
     column_filters = column_list
     form_columns = column_list
