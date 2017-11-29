@@ -17,6 +17,15 @@ import numpy as np
 
 
 with app.server.app_context():
+
+    GOOD_GLYPH = html.Span(className='glyphicon glyphicon-ok',
+                           style={'color': 'green'})
+    WARN_GLYPH = html.Span(className='glyphicon glyphicon-warning-sign',
+                           style={'color': 'orange'})
+    BAD_GLYPH = html.Span(className='glyphicon glyphicon-remove',
+                           style={'color': 'red'})
+
+
     USER_ID_TEMP = 1
     MAP_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxpc2hvYmVpcmkiLCJhIjoiY2ozYnM3YTUxMD' \
                        'AxeDMzcGNjbmZyMmplZiJ9.ZjmQ0C2MNs1AzEBC_Syadg'
@@ -309,13 +318,25 @@ with app.server.app_context():
                 miles)
         except:
             hazard_rate = 0
+
+        # Symbol based on hazard rate
+        if hazard_rate <= 0.3:
+            glyph = GOOD_GLYPH
+        elif hazard_rate < 0.7:
+            glyph = WARN_GLYPH
+        else:
+            glyph = BAD_GLYPH
         
         vicinity_msg = 'You spend {:.0%} of your time within {:.1f} miles of ' \
                         'a {} zone.'.format(hazard_rate, miles, value.lower())
 
         return html.Div([
             html.H4('Vicinity Summary'),
-            html.P(vicinity_msg),
+            glyph,
+            html.P(
+                vicinity_msg,
+                style={'display': 'inline', 'padding-left': '10px'}
+            ),
             html.H4('About {}'.format(value)),
             src_content,
             html.P(result.summary)
