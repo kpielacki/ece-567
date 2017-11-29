@@ -143,9 +143,79 @@ class MobileView(BaseView):
             return None
 
     def handle_user_location_upload(self, df, user_id):
+        """Validates data and attempts to insert records to user_location SQL
+        table.
+        
+        Args:
+            df (DataFrame): Records to be inserted.
+            user_id (str): User ID queried from provided session.
+        
+        Returns:
+            boolean: True if records inserted otherwise returns False
+        """
+        df['user_id'] = user_id
+        cols = list(df.columns)
+
+        # Veridate mandatory fields
+        TABLE_FIELDS = ['user_id', 'date', 'latitude', 'longitude']
+        for field in TABLE_FIELDS:
+            if field not in cols:
+                print '--- BAD DATA RECEIVED ---'
+                print 'Missing field {}'.format(field)
+                return False
+        
+        # Catch any bad data inserts
+        try:
+            # Drop fields not recognized
+            df = df[TABLE_FIELDS]
+
+            # Insert data records to DB 2000 rows at a time
+            df.to_sql('user_location', db.engine, index=False, chunksize=2000,
+                      if_exists='append')
+        except Exception as e:
+            print '--- FATAL DATA INSERT ERROR ---'
+            print e.message
+            return False
+
+        # Return Ture for successful record inserts
         return True
 
     def handle_user_steps_upload(self, df, user_id):
+        """Validates data and attempts to insert records to user_steps SQL
+        table.
+        
+        Args:
+            df (DataFrame): Records to be inserted.
+            user_id (str): User ID queried from provided session.
+        
+        Returns:
+            boolean: True if records inserted otherwise returns False
+        """
+        df['user_id'] = user_id
+        cols = list(df.columns)
+
+        # Veridate mandatory fields
+        TABLE_FIELDS = ['user_id', 'date', 'step_count']
+        for field in TABLE_FIELDS:
+            if field not in cols:
+                print '--- BAD DATA RECEIVED ---'
+                print 'Missing field {}'.format(field)
+                return False
+        
+        # Catch any bad data inserts
+        try:
+            # Drop fields not recognized
+            df = df[TABLE_FIELDS]
+
+            # Insert data records to DB 2000 rows at a time
+            df.to_sql('user_steps', db.engine, index=False, chunksize=2000,
+                      if_exists='append')
+        except Exception as e:
+            print '--- FATAL DATA INSERT ERROR ---'
+            print e.message
+            return False
+
+        # Return Ture for successful record inserts
         return True
 
     @expose('/', methods=('GET',))
@@ -181,7 +251,6 @@ class MobileView(BaseView):
                 data_df = pd.read_csv(csv_unicode_io)
                 msg = 'CSV\n{}'.format(data_df.to_string())
             except Exception as e:
-                print e.message
                 return abort(400)
         else:
             return abort(400)
@@ -218,7 +287,7 @@ class MobileView(BaseView):
             json_resp = json.dumps(resp_dict)
             return Response(json_resp, status=403, mimetype='application/json')
         session_id = data_dict.get('session_id', None)
-        if session is None:
+        if session_id is None:
             resp_dict['success'] = False
             resp_dict['msg'] = 'No session ID provided'
             json_resp = json.dumps(resp_dict)
@@ -240,7 +309,7 @@ class MobileView(BaseView):
             return Response(json_resp, status=400, mimetype='application/json')
         try:
             df = pd.DataFrame(table_data)
-        except Exception:
+        except Exception as e:
             resp_dict['success'] = False
             resp_dict['msg'] = 'Improper table data format'
             json_resp = json.dumps(resp_dict)
@@ -248,13 +317,27 @@ class MobileView(BaseView):
 
         # Handle data upload per table differently
         table = data_dict.get('table', None)
+        success = False
         if table == 'user_location':
-            self.handle_user_location_upload(df, user_id)
+            success = self.handle_user_location_upload(df, user_id)
         elif table == 'user_steps':
-            self.handle_user_steps_upload(df, user_id)
+            success = self.handle_user_steps_upload(df, user_id)
+        else:
+            # Response for tables that are not handled
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Unsupported table in POST request'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
 
-        # Response for tables that are not handled
-        resp_dict['success'] = False
-        resp_dict['msg'] = 'Unsupported table in POST request'
-        json_resp = json.dumps(resp_dict)
-        return Response(json_resp, status=400, mimetype='application/json')
+        if success:
+            # Response for successful data insert
+            resp_dict['success'] = True
+            resp_dict['msg'] = 'Record Insert Successful'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=200, mimetype='application/json')
+        else:
+            # Response for bad data upload
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Malformed Data Entered'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
