@@ -119,13 +119,13 @@ with app.server.app_context():
                 .filter(UserLocation.user_id == uid) \
                 .filter(UserLocation.date >= date_from).all()
             user_points = [(r.latitude, r.longitude) for r in results]
-            rate = vicinity_rate(hazard_points, user_points, 0.1)
+            rate = vicinity_rate(hazard_points, user_points, miles)
             vicinity_msg = 'The user has spent {:.0%} of their time within ' \
                            'the not recommended distance of {:.1f} miles ' \
                            'near a {} zone.'.format(rate, miles,
                                                     category.lower())
-            if rate / miles <= 0.3: glyph = GOOD_GLYPH
-            elif rate / miles < 0.7: glyph = WARN_GLYPH
+            if rate <= 0.3: glyph = GOOD_GLYPH
+            elif rate < 0.7: glyph = WARN_GLYPH
             else: glyph = BAD_GLYPH
             summary.append(html.Div([
                 glyph,
