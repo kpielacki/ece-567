@@ -341,3 +341,78 @@ class MobileView(BaseView):
             resp_dict['msg'] = 'Malformed Data Entered'
             json_resp = json.dumps(resp_dict)
             return Response(json_resp, status=400, mimetype='application/json')
+
+    @expose('/getscore/', methods=('POST',))
+    def get_score(self):
+        resp_dict = {
+            'success': False,
+            'msg': None
+        }
+
+        # TODO: Return user score
+        resp_dict['success'] = True
+        resp_dict['msg'] = 'Test message'
+        json_resp = json.dumps(resp_dict)
+        return Response(json_resp, status=200, mimetype='application/json')
+
+
+    @expose('/getprofile/', methods=('POST',))
+    def get_score(self):
+        resp_dict = {
+            'success': False,
+            'msg': None
+        }
+
+        # Only except JSON data
+        if request.mimetype != 'application/json':
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Only JSON data accepted'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Validate JSON
+        data_dict = handle_json(request.data)
+
+        # Validate email and session
+        email = data_dict.get('email', None)
+        if email is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No user found'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        session_id = data_dict.get('session_id', None)
+        if session_id is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No session ID provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        user_id = validate_user(email, session_id)
+        if user_id < 0:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid email or session provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+
+        user_info = User.query.filter_by(id=user_id).first()
+        userid = user_info.id
+        username = user_info.username
+        weight = user_info.weight
+        height = user_info.height
+        bmi = user_info.BMI()
+        gender = user_info.gender
+        birthday = user_info.birthday
+
+        # Easier casting for mobile app
+        if bmi is None: bmi = 0
+
+        resp_dict['userid'] = userid
+        resp_dict['username'] = username
+        resp_dict['weight'] = weight
+        resp_dict['height'] = height
+        resp_dict['bmi'] = bmi
+        resp_dict['gender'] = gender.capitalize()
+        resp_dict['birthday'] = str(birthday)
+        resp_dict['success'] = True
+        resp_dict['msg'] = 'Profile Found'
+        json_resp = json.dumps(resp_dict)
+        return Response(json_resp.strip('\n'), status=200, mimetype='application/json')
