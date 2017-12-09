@@ -10,6 +10,7 @@ class UserView(SecureModelView):
 
     column_list = (
         'id',
+        'username',
         'email',
         'password',
         'user_group',
@@ -17,6 +18,7 @@ class UserView(SecureModelView):
         'birthday',
         'gender',
         'weight',
+        'height',
         'last_login',
     )
 
