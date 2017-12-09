@@ -6,6 +6,7 @@ class User(db.Model):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(320), nullable=True)
     email = db.Column(db.String(320), nullable=False)
     password = db.Column(db.String(256), nullable=False)
     user_group = db.Column(db.String(50), nullable=False)
@@ -13,6 +14,7 @@ class User(db.Model):
     birthday = db.Column(db.DateTime, nullable=False)
     gender = db.Column(db.String(50), nullable=False)
     weight = db.Column(db.Integer, nullable=True)
+    height = db.Column(db.Integer, nullable=True)
     last_login = db.Column(db.DateTime, nullable=False)
 
     def __repr__(self):
@@ -26,6 +28,12 @@ class User(db.Model):
 
     def get_id(self):
         return self.id
+
+    def BMI(self):
+        if self.height is not None and self.weight is not None:
+            return float(self.height * 0.0254) / float(self.weight * 0.453592)
+        else:
+            return None
 
     def is_anonymous(self):
         return False
