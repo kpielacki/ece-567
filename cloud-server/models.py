@@ -31,7 +31,7 @@ class User(db.Model):
 
     def BMI(self):
         if self.height is not None and self.weight is not None:
-            return float(self.height * 0.0254) / float(self.weight * 0.453592)
+            return 703 * float(self.weight) / float(self.height ** 2)
         else:
             return None
 
