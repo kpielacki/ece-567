@@ -36,6 +36,22 @@ def vicinity_rate(src_points, comp_points, mile_thresh):
     return float(cnt) / len(comp_points)
 
 
+def bmi_to_glyph(bmi):
+    if bmi is None: return html.P('N/A')
+
+    if bmi >= 30 or bmi < 13.5: glyph = BAD_GLYPH
+    elif bmi >= 25 or bmi < 18.5: glyph = WARN_GLYPH
+    else: glyph = GOOD_GLYPH
+
+    return html.Div([
+        glyph,
+        html.P(
+            '{:.2f}'.format(bmi),
+            style={'display': 'inline', 'padding-left': '10px'}
+        )
+    ])
+
+
 if __name__ == '__main__':
     points_1 = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
     points_2 = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5)]

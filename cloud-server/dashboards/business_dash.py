@@ -1,6 +1,7 @@
 from plotly_app import app
 from admin_app_config import db
-from utils import (vicinity_rate, GOOD_GLYPH, WARN_GLYPH, BAD_GLYPH)
+from utils import (vicinity_rate, GOOD_GLYPH, WARN_GLYPH, BAD_GLYPH,
+                   bmi_to_glyph)
 
 import dash
 import dash_core_components as dcc
@@ -52,9 +53,15 @@ with app.server.app_context():
         email = 'N/A'
         gender = 'N/A'
         age = 'N/A'
+        height = 'N/A'
+        weight = 'N/A'
+        bmi = html.P('N/A')
         if result is not None:
             email = str(result.email).capitalize()
             gender = str(result.gender).capitalize()
+            height = '{:.0f}'.format(result.height)
+            weight = '{:.0f}'.format(result.weight)
+            bmi = bmi_to_glyph(result.BMI())
             if result.birthday is None:
                 age = 'N/A'
             else:
@@ -64,7 +71,7 @@ with app.server.app_context():
                     age = str(age) + ' Days'
                 else:
                     age = str(age) + ' Years'
-        return email, age, gender
+        return email, age, gender, height, weight, bmi
 
     def get_activity(uid):
         date_from = datetime.date.today() - datetime.timedelta(days=365)
@@ -140,11 +147,14 @@ with app.server.app_context():
                   [Input('uid-dropdown', 'value')])
     def update_info(uid):
         try:
-            email, age, gender = get_profile(uid)
+            email, age, gender, height, weight, bmi = get_profile(uid)
         except:
             email = 'N/A'
             age = 'N/A'
             gender = 'N/A'
+            height = 'N/A'
+            weight = 'N/A'
+            bmi = html.P('N/A')
 
         try:
             overview = get_hazard_summary(uid)
@@ -162,7 +172,10 @@ with app.server.app_context():
                 html.Ul([
                     html.Li('Email: {}'.format(email)),
                     html.Li('Gender: {}'.format(gender)),
-                    html.Li('Age: {}'.format(age))
+                    html.Li('Age: {}'.format(age)),
+                    html.Li('Height (inches): {}'.format(height)),
+                    html.Li('Weight (lbs): {}'.format(weight)),
+                    html.Li(bmi)
                 ]),
             ]),
             html.Div([
