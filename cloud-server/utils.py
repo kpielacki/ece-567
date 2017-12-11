@@ -44,11 +44,11 @@ def bmi_to_glyph(bmi):
     else: glyph = GOOD_GLYPH
 
     return html.Div([
-        glyph,
         html.P(
-            '{:.2f}'.format(bmi),
-            style={'display': 'inline', 'padding-left': '10px'}
-        )
+            'BMI: {:.1f}'.format(bmi),
+            style={'display': 'inline', 'padding-right': '10px'}
+        ),
+        glyph
     ])
 
 
