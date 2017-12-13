@@ -560,10 +560,8 @@ class MobileView(BaseView):
 
         # Build JSON response
         resp_dict['success'] = True
-        resp_dict['weight'] = '{:.1f} lbs'.format(weight)
-        height_ft = floor(float(height) / 12)
-        height_inch = height % 12
-        resp_dict['height'] = '{:.1f} ft {:.0f} in'.format(height_ft, height_inch)
+        resp_dict['weight'] = weight * 0.453592
+        resp_dict['height'] = height * 2.54
         resp_dict['steps'] = sum(steps)
         resp_dict['calories'] = sum(calories)
         resp_dict['msg'] = 'Profile Found'
