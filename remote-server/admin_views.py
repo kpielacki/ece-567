@@ -21,15 +21,17 @@ def add_admin_views(admin, app):
     admin.add_view(MobileView(name='Mobile', endpoint='mobile'))
 
     # User dash view handling
-    admin.add_view(UserDashView(name='User Portal', endpoint='userdash', app=app))
-    admin.add_view(BusinessDashView(name='Business Portal', endpoint='businessdash', app=app))
+    admin.add_view(UserDashView(name='User Portal', endpoint='userdash',
+                   app=app))
+    admin.add_view(BusinessDashView(name='Business Portal',
+                                    endpoint='businessdash', app=app))
 
     # Admin portal views
-    admin.add_view(UserView(User, db.session, category='Admin', name='Users'))
+    admin.add_view(UserView(User, db.session, name='Users'))
     admin.add_view(HazardSummaryView(
-        HazardSummary, db.session, category='Admin', name='Hazard Summary'))
+        HazardSummary, db.session, name='Hazard Summary'))
     admin.add_view(HazardLocationView(
-        HazardLocation, db.session, category='Admin', name='Hazard Locations'))
+        HazardLocation, db.session, name='Hazard Locations'))
 
     # Login and Logout views
     admin.add_view(LoginView(name='Login', endpoint='login'))
