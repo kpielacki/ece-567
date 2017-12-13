@@ -488,9 +488,8 @@ class MobileView(BaseView):
                 .filter(UserLocation.date >= date_from).all()
             user_points = [(r.latitude, r.longitude) for r in results]
             rate = vicinity_rate(hazard_points, user_points, miles)
-            vicinity_msg = '{}: Spent {:.0%} within not recommended ' \
-                           'distance {:.1f} miles.'.format(
-                                category, rate, miles)
+            vicinity_msg = '{}: {:.0%} within {:.1f} miles.'.format(
+                category, rate, miles)
             hazard_msgs.append(vicinity_msg)
 
         if len(hazard_msgs) > 0:
@@ -501,7 +500,6 @@ class MobileView(BaseView):
         resp_dict['success'] = True
         resp_dict['msg'] = 'Profile Found'
         json_resp = json.dumps(resp_dict)
-        print resp_dict
         return Response(json_resp.strip('\n'), status=200, mimetype='application/json')
 
     @expose('/getactivity/', methods=('POST',))
