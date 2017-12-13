@@ -6,7 +6,9 @@ from flask_login import (current_user, login_user)
 import json
 import pandas as pd
 from io import StringIO
-from models import User
+from math import floor
+from models import (User, HazardLocation, HazardSummary, UserLocation, UserSteps)
+from utils import vicinity_rate
 from werkzeug.security import (generate_password_hash, check_password_hash)
 from wtforms.validators import (Length, Required, Regexp, Email)
 
@@ -45,6 +47,17 @@ def validate_user(email, session_id):
 
     # TODO: Validate cookie or session ID tied to email
     return valid_user.id
+
+
+def steps_to_calories(step_cnt, weight):
+    """Calculates the calories burned from total steps.
+    https://www.livestrong.com/article/238020-how-to-convert-pedometer-steps-to-calories/
+
+    :step_cnt (Integer): Number of steps.
+
+    Returns (Integer): Number of calories burned.
+    """
+    return (float(0.57 * weight) / 2200) * step_cnt
 
 
 class MobileLoginView(BaseView):
@@ -413,6 +426,148 @@ class MobileView(BaseView):
         resp_dict['gender'] = gender.capitalize()
         resp_dict['birthday'] = str(birthday)
         resp_dict['success'] = True
+        resp_dict['msg'] = 'Profile Found'
+        json_resp = json.dumps(resp_dict)
+        return Response(json_resp.strip('\n'), status=200, mimetype='application/json')
+
+    @expose('/gethazards/', methods=('POST',))
+    def get_hazards(self):
+        resp_dict = {
+            'success': False,
+            'msg': None
+        }
+
+        # Only except JSON data
+        if request.mimetype != 'application/json':
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Only JSON data accepted'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Validate JSON
+        data_dict = handle_json(request.data)
+
+        # Validate email and session
+        email = data_dict.get('email', None)
+        if email is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No user found'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        session_id = data_dict.get('session_id', None)
+        if session_id is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No session ID provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        user_id = validate_user(email, session_id)
+        if user_id < 0:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid email or session provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+
+
+        date_from = datetime.date.today() - datetime.timedelta(days=365)
+        hazards = db.session.query(HazardSummary) \
+                  .order_by(HazardSummary.hazard_category.asc()).all()
+        hazard_msgs = []
+        for hazard in hazards:
+            miles = hazard.bad_distance
+            if miles is None: miles = 0.1
+            category = hazard.hazard_category
+
+            # Get hazard points
+            results = db.session.query(HazardLocation) \
+                .filter(HazardLocation.hazard_category == category).all()
+            hazard_points = [(r.latitude, r.longitude) for r in results]
+
+            # Get user points
+            results = db.session.query(UserLocation) \
+                .filter(UserLocation.user_id == user_id) \
+                .filter(UserLocation.date >= date_from).all()
+            user_points = [(r.latitude, r.longitude) for r in results]
+            rate = vicinity_rate(hazard_points, user_points, miles)
+            vicinity_msg = '{}: Spent {:.0%} within not recommended ' \
+                           'distance {:.1f} miles.'.format(
+                                category, rate, miles)
+            hazard_msgs.append(vicinity_msg)
+
+        if len(hazard_msgs) > 0:
+            resp_dict['hazard_info'] = "\n".join(hazard_msgs)
+        else:
+            resp_dict['hazard_info'] = "No user information found"
+
+        resp_dict['success'] = True
+        resp_dict['msg'] = 'Profile Found'
+        json_resp = json.dumps(resp_dict)
+        print resp_dict
+        return Response(json_resp.strip('\n'), status=200, mimetype='application/json')
+
+    @expose('/getactivity/', methods=('POST',))
+    def get_activity(self):
+        resp_dict = {
+            'success': False,
+            'msg': None
+        }
+
+        # Only except JSON data
+        if request.mimetype != 'application/json':
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Only JSON data accepted'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=400, mimetype='application/json')
+
+        # Validate JSON
+        data_dict = handle_json(request.data)
+
+        # Validate email and session
+        email = data_dict.get('email', None)
+        if email is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No user found'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        session_id = data_dict.get('session_id', None)
+        if session_id is None:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'No session ID provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+        user_id = validate_user(email, session_id)
+        if user_id < 0:
+            resp_dict['success'] = False
+            resp_dict['msg'] = 'Invalid email or session provided'
+            json_resp = json.dumps(resp_dict)
+            return Response(json_resp, status=403, mimetype='application/json')
+
+        # Pull user info
+        user_info = User.query.filter_by(id=user_id).first()
+        weight = user_info.weight
+        height = user_info.height
+
+        date_from = datetime.date.today() - datetime.timedelta(days=365)
+        result = db.session.query(UserSteps) \
+            .filter(UserSteps.user_id == user_id) \
+            .filter(UserSteps.date >= date_from) \
+            .order_by(UserSteps.date.desc()).all()
+        steps = [r.step_count for r in result]
+
+        # Use average if weight not entered
+        if weight is None:
+            if result.gender is None: weight = 180
+            elif result.gender.lower() == 'male': weight = 180
+            else: weight = 166
+        calories = [steps_to_calories(val, weight) for val in steps]
+
+        # Build JSON response
+        resp_dict['success'] = True
+        resp_dict['weight'] = '{:.1f} lbs'.format(weight)
+        height_ft = floor(float(height) / 12)
+        height_inch = height % 12
+        resp_dict['height'] = '{:.1f} ft {:.0f} in'.format(height_ft, height_inch)
+        resp_dict['steps'] = sum(steps)
+        resp_dict['calories'] = sum(calories)
         resp_dict['msg'] = 'Profile Found'
         json_resp = json.dumps(resp_dict)
         return Response(json_resp.strip('\n'), status=200, mimetype='application/json')
