@@ -37,7 +37,6 @@
 - Create interactive JS elements through dcc.Input
 - Return interactive JS elements through dcc.Output
 
-
 ## Plotly HTML
 - Instead of writing HTML or using an HTML templating engine, you compose your
   layout using Python structures with the dash-html-components library
@@ -80,3 +79,7 @@ html.Div([
 
 </div>
 ```
+
+
+## Jinja2
+- For non interactive
