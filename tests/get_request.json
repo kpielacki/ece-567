@@ -1,0 +1,14 @@
+{
+  "user_id": 9,
+  "table_name": "user_steps",
+  "day_count": 7
+}
+
+
+{
+  "success": true,
+  "data": {
+    "date": [    ],
+    "step_count": [    ]
+  }
+}
